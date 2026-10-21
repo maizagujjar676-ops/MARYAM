@@ -1,0 +1,158 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email == "hussainmaryam923@gmail.com" && request.auth.token.email_verified == true) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Validation for UserProfile
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'email', 'plan', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'displayName', 'photoURL', 'plan', 'leadCount', 'outreachDraftCount', 'createdAt']) &&
+        data.uid is string && data.uid.size() <= 128 && data.uid == request.auth.uid &&
+        data.email is string && data.email.size() <= 150 &&
+        data.plan in ['free', 'pro', 'agency'] &&
+        data.createdAt is string && data.createdAt.size() <= 50 &&
+        (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100)) &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500)) &&
+        (!('leadCount' in data) || data.leadCount is number) &&
+        (!('outreachDraftCount' in data) || data.outreachDraftCount is number);
+    }
+
+    // Validation for Lead
+    function isValidLead(data) {
+      return data.keys().hasAll(['userId', 'businessName', 'industry', 'status', 'leadScore', 'createdAt']) &&
+        data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid &&
+        data.businessName is string && data.businessName.size() > 0 && data.businessName.size() <= 200 &&
+        data.industry is string && data.industry.size() <= 100 &&
+        data.status in ['new', 'qualified', 'contacted', 'replied', 'meeting', 'won', 'lost', 'archived'] &&
+        data.leadScore is number && data.leadScore >= 0 && data.leadScore <= 100 &&
+        data.createdAt is string && data.createdAt.size() <= 50 &&
+        (!('location' in data) || (data.location is string && data.location.size() <= 150)) &&
+        (!('city' in data) || (data.city is string && data.city.size() <= 100)) &&
+        (!('country' in data) || (data.country is string && data.country.size() <= 100)) &&
+        (!('companySize' in data) || (data.companySize is string && data.companySize.size() <= 50)) &&
+        (!('website' in data) || (data.website is string && data.website.size() <= 300)) &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 150)) &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 50)) &&
+        (!('contactPerson' in data) || (data.contactPerson is string && data.contactPerson.size() <= 100)) &&
+        (!('dataSource' in data) || (data.dataSource is string && data.dataSource.size() <= 50)) &&
+        (!('isDemoData' in data) || data.isDemoData is bool) &&
+        (!('verifiedDate' in data) || (data.verifiedDate is string && data.verifiedDate.size() <= 50)) &&
+        (!('scoreExplanation' in data) || (data.scoreExplanation is string && data.scoreExplanation.size() <= 2000)) &&
+        (!('tags' in data) || (data.tags is list && data.tags.size() <= 15)) &&
+        (!('assignedTo' in data) || (data.assignedTo is string && data.assignedTo.size() <= 100)) &&
+        (!('nextFollowUpDate' in data) || (data.nextFollowUpDate is string && data.nextFollowUpDate.size() <= 50)) &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 5000)) &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    // Validation for SavedSearch
+    function isValidSavedSearch(data) {
+      return data.keys().hasAll(['userId', 'name', 'createdAt']) &&
+        data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 150 &&
+        data.createdAt is string && data.createdAt.size() <= 50 &&
+        (!('industry' in data) || (data.industry is string && data.industry.size() <= 100)) &&
+        (!('location' in data) || (data.location is string && data.location.size() <= 150)) &&
+        (!('companySize' in data) || (data.companySize is string && data.companySize.size() <= 50)) &&
+        (!('hasWebsite' in data) || data.hasWebsite is bool) &&
+        (!('keywords' in data) || (data.keywords is string && data.keywords.size() <= 250)) &&
+        (!('resultsCount' in data) || data.resultsCount is number);
+    }
+
+    // Validation for OutreachDraft
+    function isValidOutreachDraft(data) {
+      return data.keys().hasAll(['userId', 'businessName', 'type', 'content', 'createdAt']) &&
+        data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid &&
+        data.businessName is string && data.businessName.size() <= 200 &&
+        data.type in ['cold_email', 'linkedin', 'followup', 'website_audit', 'marketing_proposal'] &&
+        data.content is string && data.content.size() <= 10000 &&
+        data.createdAt is string && data.createdAt.size() <= 50 &&
+        (!('leadId' in data) || (data.leadId is string && data.leadId.size() <= 128)) &&
+        (!('tone' in data) || data.tone in ['professional', 'consultative', 'direct', 'friendly']) &&
+        (!('subject' in data) || (data.subject is string && data.subject.size() <= 300));
+    }
+
+    // Match /users/{userId}
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && isValidUserProfile(incoming());
+      allow update: if (isOwner(userId) || isAdmin()) &&
+        isValidUserProfile(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt;
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // Match /leads/{leadId}
+    match /leads/{leadId} {
+      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidLead(incoming());
+      allow update: if isSignedIn() &&
+        (existing().userId == request.auth.uid || isAdmin()) &&
+        isValidLead(incoming()) &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt;
+      allow delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // Match /saved_searches/{searchId}
+    match /saved_searches/{searchId} {
+      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidSavedSearch(incoming());
+      allow update: if isSignedIn() &&
+        (existing().userId == request.auth.uid || isAdmin()) &&
+        isValidSavedSearch(incoming()) &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt;
+      allow delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // Match /outreach_drafts/{draftId}
+    match /outreach_drafts/{draftId} {
+      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidOutreachDraft(incoming());
+      allow update: if isSignedIn() &&
+        (existing().userId == request.auth.uid || isAdmin()) &&
+        isValidOutreachDraft(incoming()) &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt;
+      allow delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+    }
+  }
+}

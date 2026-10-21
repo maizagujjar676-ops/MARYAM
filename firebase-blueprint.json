@@ -1,0 +1,102 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with plan and subscription quota status",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 150 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "plan": { "type": "string", "enum": ["free", "pro", "agency"] },
+        "leadCount": { "type": "number" },
+        "outreachDraftCount": { "type": "number" },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["uid", "email", "plan", "createdAt"]
+    },
+    "Lead": {
+      "title": "Lead",
+      "description": "B2B Lead entity containing business signals, contact info, status, and AI score",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "businessName": { "type": "string", "maxLength": 200 },
+        "industry": { "type": "string", "maxLength": 100 },
+        "location": { "type": "string", "maxLength": 150 },
+        "city": { "type": "string", "maxLength": 100 },
+        "country": { "type": "string", "maxLength": 100 },
+        "companySize": { "type": "string", "maxLength": 50 },
+        "website": { "type": "string", "maxLength": 300 },
+        "email": { "type": "string", "maxLength": 150 },
+        "phone": { "type": "string", "maxLength": 50 },
+        "contactPerson": { "type": "string", "maxLength": 100 },
+        "dataSource": { "type": "string", "maxLength": 50 },
+        "isDemoData": { "type": "boolean" },
+        "verifiedDate": { "type": "string", "maxLength": 50 },
+        "leadScore": { "type": "number" },
+        "scoreExplanation": { "type": "string", "maxLength": 2000 },
+        "status": { "type": "string", "enum": ["new", "qualified", "contacted", "replied", "meeting", "won", "lost", "archived"] },
+        "tags": { "type": "array" },
+        "assignedTo": { "type": "string", "maxLength": 100 },
+        "nextFollowUpDate": { "type": "string", "maxLength": 50 },
+        "notes": { "type": "string", "maxLength": 5000 },
+        "createdAt": { "type": "string", "maxLength": 50 },
+        "updatedAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["userId", "businessName", "industry", "status", "leadScore", "createdAt"]
+    },
+    "SavedSearch": {
+      "title": "SavedSearch",
+      "description": "User saved lead discovery search filters",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 150 },
+        "industry": { "type": "string", "maxLength": 100 },
+        "location": { "type": "string", "maxLength": 150 },
+        "companySize": { "type": "string", "maxLength": 50 },
+        "hasWebsite": { "type": "boolean" },
+        "keywords": { "type": "string", "maxLength": 250 },
+        "resultsCount": { "type": "number" },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["userId", "name", "createdAt"]
+    },
+    "OutreachDraft": {
+      "title": "OutreachDraft",
+      "description": "AI-generated outreach email or LinkedIn message draft",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "leadId": { "type": "string", "maxLength": 128 },
+        "businessName": { "type": "string", "maxLength": 200 },
+        "type": { "type": "string", "enum": ["cold_email", "linkedin", "followup", "website_audit", "marketing_proposal"] },
+        "tone": { "type": "string", "enum": ["professional", "consultative", "direct", "friendly"] },
+        "subject": { "type": "string", "maxLength": 300 },
+        "content": { "type": "string", "maxLength": 10000 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["userId", "businessName", "type", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Private user profile and plan state"
+    },
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "B2B leads managed by user"
+    },
+    "/saved_searches/{searchId}": {
+      "schema": "SavedSearch",
+      "description": "Saved lead discovery queries"
+    },
+    "/outreach_drafts/{draftId}": {
+      "schema": "OutreachDraft",
+      "description": "Personalized outreach drafts generated for leads"
+    }
+  }
+}

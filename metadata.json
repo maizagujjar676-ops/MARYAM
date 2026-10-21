@@ -1,0 +1,6 @@
+{
+  "name": "LeadPilot AI",
+  "description": "AI-powered B2B lead discovery, qualification, and sales pipeline management platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
